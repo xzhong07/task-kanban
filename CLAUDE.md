@@ -39,7 +39,21 @@ npx tsc --noEmit                             # 型チェック
   - `cookies()` を読むため、`cacheComponents: true` 下ではサーバー側の Supabase 呼び出しは動的データになる。`<Suspense>` 境界や `"use cache"` との組み合わせは docs で確認すること。
 - **起動時の接続チェック**: `src/instrumentation.ts` の `register()` がサーバー起動時に 1 回だけ `checkSupabaseConnection()`（`src/lib/supabase/checkConnection.ts`、`/auth/v1/health` へ fetch）を実行し、**失敗時のみ** `console.error` で `[Supabase] 接続失敗: <理由>` を出力する（成功時は何も出力しない）。`register()` は起動時にしか走らないため、変更を確認するには開発サーバーの再起動が必要。
 - テストで Supabase への通信を扱う場合は `fetch` などの外部依存のみをモックする（例: `src/__tests__/checkConnection.test.ts` の `vi.stubGlobal("fetch", ...)`）。
-- 未実装: 認証（セッション更新用の `proxy.ts`）、DB スキーマ・マイグレーション、型生成（Supabase MCP の `generate_typescript_types`）。
+- **DB スキーマ**: スキーマ変更は Supabase MCP の `apply_migration` で行い、変更後は `get_advisors`（security / performance）を確認する。ローカルにマイグレーションファイルは無い（履歴は `list_migrations`）。
+  - `public.tasks`: `id` uuid / `title`（trim 後 1〜100 文字）/ `description`（〜1000 文字、既定 `''`）/ `status`（`todo` / `in_progress` / `done` の CHECK 制約）/ `created_at` / `updated_at`（トリガー `set_updated_at` で自動更新）。
+  - **RLS は暫定**: 認証未実装のため anon / authenticated に全操作を許可するポリシーになっている。認証導入時に `user_id` 列を追加し、所有者のみ操作できるポリシーへ置き換えること。
+- **型**: `src/lib/supabase/database.types.ts` は Supabase MCP の `generate_typescript_types` で生成したもの（手で編集しない）。スキーマを変えたら再生成し、`createClient<Database>` に反映される。
+- 未実装: 認証（セッション更新用の `proxy.ts`）。
+
+## タスク機能の構成
+
+- `src/lib/tasks/types.ts`: `Task`（画面用、`createdAt` などキャメルケース）、`TASK_STATUSES`（値と表示ラベル）、`ActionResult<T>`（`{ ok: true, data }` / `{ ok: false, error }`）。
+- `src/lib/tasks/validation.ts`: `validateTaskInput()`。DB の CHECK 制約と同じ条件をクライアント・サーバー両方で使う（文字数はコードポイント単位）。制約を変えるときは DB と両方を揃える。
+- `src/lib/tasks/queries.ts`: `getTasks()`（サーバー専用）と、DB 行 → `Task` 変換の `toTask()`。
+- `src/app/actions.ts`（`"use server"`）: `createTask` / `updateTask` / `deleteTask`。Server Action は誰でも呼べる入口なので必ずサーバー側でも検証する。例外は投げずに `ActionResult` を返し、DB のエラー内容は画面に出さない。
+- `src/app/page.tsx`: 見出しは同期で描画し、`getTasks()` を呼ぶ async の `TaskBoardLoader` を `<Suspense>` 内に置く（`cacheComponents` の要件）。
+- `src/components/kanban/`: `KanbanBoard`（client。`initialTasks` を `useState` で持ち、Server Action の戻り値で state を更新して即時反映）→ `TaskCard`（表示・編集切り替え・削除）/ `TaskForm`（追加・編集共通）/ `ConfirmDialog`（`role="alertdialog"`、Esc でキャンセル）。
+- **テスト方針**: Server Action は `KanbanBoard` に `actions` prop として渡しているので、UI テストでは `vi.fn()` を渡す（`src/__tests__/KanbanBoard.test.tsx`）。Server Action / `getTasks` のテストは `@/lib/supabase/server` のみを `vi.mock` し、クエリビルダーのフェイクで検証する（`src/__tests__/actions.test.ts`）。要素は role とアクセシブルネーム（列 = `region`、カード = `article`、フォーム = `form`）で取得する。
 
 ## テスト
 
