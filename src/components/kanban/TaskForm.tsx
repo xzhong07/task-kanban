@@ -1,6 +1,13 @@
 "use client";
 
 import { useId, useState, type FormEvent } from "react";
+import { CircleAlert, Loader2 } from "lucide-react";
+import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 import { TASK_STATUSES, type ActionResult, type TaskInput } from "@/lib/tasks/types";
 import {
   DESCRIPTION_MAX_LENGTH,
@@ -17,9 +24,6 @@ type TaskFormProps = {
   onCancel?: () => void;
   resetOnSuccess?: boolean;
 };
-
-const inputClassName =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950";
 
 export function TaskForm({
   label,
@@ -60,73 +64,60 @@ export function TaskForm({
   }
 
   return (
-    <form aria-label={label} onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <label htmlFor={titleId} className="text-sm font-medium">
-          タイトル
-        </label>
-        <input
+    <form aria-label={label} onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor={titleId}>タイトル</Label>
+        <Input
           id={titleId}
           type="text"
           maxLength={TITLE_MAX_LENGTH}
+          placeholder="例: 企画書を作成する"
           value={values.title}
           onChange={(event) => setValues({ ...values, title: event.target.value })}
-          className={inputClassName}
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor={descriptionId} className="text-sm font-medium">
-          説明
-        </label>
-        <textarea
+      <div className="flex flex-col gap-2">
+        <Label htmlFor={descriptionId}>説明</Label>
+        <Textarea
           id={descriptionId}
           rows={2}
           maxLength={DESCRIPTION_MAX_LENGTH}
+          placeholder="詳細やメモ（任意）"
           value={values.description}
           onChange={(event) => setValues({ ...values, description: event.target.value })}
-          className={inputClassName}
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor={statusId} className="text-sm font-medium">
-          ステータス
-        </label>
-        <select
+      <div className="flex flex-col gap-2">
+        <Label htmlFor={statusId}>ステータス</Label>
+        <NativeSelect
           id={statusId}
+          className="w-full"
           value={values.status}
           onChange={(event) => setValues({ ...values, status: event.target.value })}
-          className={inputClassName}
         >
           {TASK_STATUSES.map((status) => (
-            <option key={status.value} value={status.value}>
+            <NativeSelectOption key={status.value} value={status.value}>
               {status.label}
-            </option>
+            </NativeSelectOption>
           ))}
-        </select>
+        </NativeSelect>
       </div>
       {error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
-          {error}
-        </p>
+        <Alert variant="destructive">
+          <CircleAlert aria-hidden="true" />
+          <AlertTitle>{error}</AlertTitle>
+        </Alert>
       )}
       <div className="flex justify-end gap-2">
         {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isPending}
-            className="rounded-md border border-zinc-300 px-4 py-2 text-sm hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-          >
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
             キャンセル
-          </button>
+          </Button>
         )}
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-        >
+        <Button type="submit" disabled={isPending}>
+          {isPending && <Loader2 aria-hidden="true" className="animate-spin" />}
           {isPending ? pendingLabel : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );
