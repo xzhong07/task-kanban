@@ -29,6 +29,18 @@ npx tsc --noEmit                             # 型チェック
 - **`LayoutProps<"/">` / `PageProps` などのルート型はグローバル型**（Next.js が `.next/types` に生成）で import 不要。
 - フォントは `next/font/google` の Geist / Geist Mono を `src/app/layout.tsx` で CSS 変数として読み込んでいる。
 
+## Supabase
+
+- `@supabase/ssr` + `@supabase/supabase-js` を使用。Supabase プロジェクトは `task-kanban`（ref: `bwrljikjeswdlbhcuwfn`、リージョン ap-northeast-1）。プロジェクト情報・テーブル・キーは Supabase MCP で確認する。
+- **環境変数**: `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（キー一覧は `.env.example`）。実際の値は `.env.local` にあり、git 管理外。キーは旧 anon key ではなく publishable key（`sb_publishable_...`）を使う。
+- **クライアントの使い分け**:
+  - Client Component → `@/lib/supabase/client` の `createClient()`（同期）
+  - Server Component / Server Action / Route Handler → `@/lib/supabase/server` の `createClient()`（`cookies()` を使うため `async`、`await` が必要）。リクエストごとに生成し、モジュールスコープで使い回さない。
+  - `cookies()` を読むため、`cacheComponents: true` 下ではサーバー側の Supabase 呼び出しは動的データになる。`<Suspense>` 境界や `"use cache"` との組み合わせは docs で確認すること。
+- **起動時の接続チェック**: `src/instrumentation.ts` の `register()` がサーバー起動時に 1 回だけ `checkSupabaseConnection()`（`src/lib/supabase/checkConnection.ts`、`/auth/v1/health` へ fetch）を実行し、**失敗時のみ** `console.error` で `[Supabase] 接続失敗: <理由>` を出力する（成功時は何も出力しない）。`register()` は起動時にしか走らないため、変更を確認するには開発サーバーの再起動が必要。
+- テストで Supabase への通信を扱う場合は `fetch` などの外部依存のみをモックする（例: `src/__tests__/checkConnection.test.ts` の `vi.stubGlobal("fetch", ...)`）。
+- 未実装: 認証（セッション更新用の `proxy.ts`）、DB スキーマ・マイグレーション、型生成（Supabase MCP の `generate_typescript_types`）。
+
 ## テスト
 
 - Vitest 5 + React Testing Library + jsdom。設定は `vitest.config.mts`（パスエイリアスは Vite 標準の `resolve.tsconfigPaths: true` で解決しており、`vite-tsconfig-paths` プラグインは使わない）。
