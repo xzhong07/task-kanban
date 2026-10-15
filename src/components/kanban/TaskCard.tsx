@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CircleAlert, Loader2, Pencil, Trash2 } from "lucide-react";
-import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import type { ActionResult, Task, TaskInput } from "@/lib/tasks/types";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { ErrorAlert } from "./ErrorAlert";
 import { TaskForm } from "./TaskForm";
 
 type TaskCardProps = {
@@ -109,10 +109,7 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
             </CardHeader>
             {deleteError && (
               <CardContent>
-                <Alert variant="destructive">
-                  <CircleAlert aria-hidden="true" />
-                  <AlertTitle>{deleteError}</AlertTitle>
-                </Alert>
+                <ErrorAlert message={deleteError} />
               </CardContent>
             )}
           </>

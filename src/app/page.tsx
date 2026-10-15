@@ -1,7 +1,7 @@
 import { Suspense } from "react";
-import { CircleAlert, LayoutGrid, Loader2 } from "lucide-react";
+import { LayoutGrid, Loader2 } from "lucide-react";
+import { ErrorAlert } from "@/components/kanban/ErrorAlert";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
-import { Alert, AlertTitle } from "@/components/ui/alert";
 import { getTasks } from "@/lib/tasks/queries";
 import type { Task } from "@/lib/tasks/types";
 import { createTask, deleteTask, updateTask } from "./actions";
@@ -41,12 +41,7 @@ async function TaskBoardLoader() {
   }
 
   if (tasks === null) {
-    return (
-      <Alert variant="destructive">
-        <CircleAlert aria-hidden="true" />
-        <AlertTitle>タスクを読み込めませんでした。時間をおいて再度お試しください。</AlertTitle>
-      </Alert>
-    );
+    return <ErrorAlert message="タスクを読み込めませんでした。時間をおいて再度お試しください。" />;
   }
 
   return <KanbanBoard initialTasks={tasks} actions={{ createTask, updateTask, deleteTask }} />;
