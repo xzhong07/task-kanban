@@ -1,25 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { Inbox, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import {
-  TASK_STATUSES,
-  type ActionResult,
-  type Task,
-  type TaskInput,
-  type TaskStatus,
-} from "@/lib/tasks/types";
+import { TASK_STATUSES, type Task, type TaskInput, type TaskStatus } from "@/lib/tasks/types";
 import { TaskCard } from "./TaskCard";
 import { TaskForm } from "./TaskForm";
+import { useKanbanTasks, type KanbanActions } from "./useKanbanTasks";
 
-export type KanbanActions = {
-  createTask: (input: TaskInput) => Promise<ActionResult<Task>>;
-  updateTask: (id: string, input: TaskInput) => Promise<ActionResult<Task>>;
-  deleteTask: (id: string) => Promise<ActionResult<{ id: string }>>;
-};
+export type { KanbanActions };
 
 type KanbanBoardProps = {
   initialTasks: Task[];
@@ -35,31 +25,12 @@ const statusDotClassName: Record<TaskStatus, string> = {
 };
 
 export function KanbanBoard({ initialTasks, actions }: KanbanBoardProps) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-
-  async function handleCreate(input: TaskInput) {
-    const result = await actions.createTask(input);
-    if (result.ok) {
-      setTasks((current) => [...current, result.data]);
-    }
-    return result;
-  }
-
-  async function handleUpdate(id: string, input: TaskInput) {
-    const result = await actions.updateTask(id, input);
-    if (result.ok) {
-      setTasks((current) => current.map((task) => (task.id === id ? result.data : task)));
-    }
-    return result;
-  }
-
-  async function handleDelete(id: string) {
-    const result = await actions.deleteTask(id);
-    if (result.ok) {
-      setTasks((current) => current.filter((task) => task.id !== id));
-    }
-    return result;
-  }
+  const {
+    tasks,
+    createTask: handleCreate,
+    updateTask: handleUpdate,
+    deleteTask: handleDelete,
+  } = useKanbanTasks(initialTasks, actions);
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[18rem_1fr]">
