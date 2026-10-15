@@ -1,6 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { CircleAlert, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import type { ActionResult, Task, TaskInput } from "@/lib/tasks/types";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { TaskForm } from "./TaskForm";
@@ -35,56 +46,78 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
   }
 
   return (
-    <article
-      aria-label={task.title}
-      className="rounded-md border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-    >
-      {isEditing ? (
-        <TaskForm
-          label={`「${task.title}」を編集`}
-          initialValues={{
-            title: task.title,
-            description: task.description,
-            status: task.status,
-          }}
-          submitLabel="保存"
-          pendingLabel="保存中…"
-          onSubmit={handleUpdate}
-          onCancel={() => setIsEditing(false)}
-        />
-      ) : (
-        <>
-          <h3 className="font-medium break-words">{task.title}</h3>
-          {task.description && (
-            <p className="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-600 dark:text-zinc-400">
-              {task.description}
-            </p>
-          )}
-          {deleteError && (
-            <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">
-              {deleteError}
-            </p>
-          )}
-          <div className="mt-3 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              disabled={isDeleting}
-              className="rounded-md px-2 py-1 text-sm text-zinc-700 hover:bg-zinc-100 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              編集
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsConfirming(true)}
-              disabled={isDeleting}
-              className="rounded-md px-2 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950"
-            >
-              {isDeleting ? "削除中…" : "削除"}
-            </button>
-          </div>
-        </>
-      )}
+    <article aria-label={task.title}>
+      <Card
+        size="sm"
+        className="shadow-xs transition-shadow hover:shadow-md data-[deleting=true]:opacity-60"
+        data-deleting={isDeleting}
+      >
+        {isEditing ? (
+          <CardContent>
+            <TaskForm
+              label={`「${task.title}」を編集`}
+              initialValues={{
+                title: task.title,
+                description: task.description,
+                status: task.status,
+              }}
+              submitLabel="保存"
+              pendingLabel="保存中…"
+              onSubmit={handleUpdate}
+              onCancel={() => setIsEditing(false)}
+            />
+          </CardContent>
+        ) : (
+          <>
+            <CardHeader>
+              <CardTitle className="break-words">{task.title}</CardTitle>
+              {task.description && (
+                <CardDescription className="whitespace-pre-wrap break-words">
+                  {task.description}
+                </CardDescription>
+              )}
+              <CardAction className="flex gap-0.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="編集"
+                  title="編集"
+                  onClick={() => setIsEditing(true)}
+                  disabled={isDeleting}
+                  className="text-muted-foreground"
+                >
+                  <Pencil aria-hidden="true" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={isDeleting ? "削除中…" : "削除"}
+                  title="削除"
+                  onClick={() => setIsConfirming(true)}
+                  disabled={isDeleting}
+                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                >
+                  {isDeleting ? (
+                    <Loader2 aria-hidden="true" className="animate-spin" />
+                  ) : (
+                    <Trash2 aria-hidden="true" />
+                  )}
+                </Button>
+              </CardAction>
+            </CardHeader>
+            {deleteError && (
+              <CardContent>
+                <Alert variant="destructive">
+                  <CircleAlert aria-hidden="true" />
+                  <AlertTitle>{deleteError}</AlertTitle>
+                </Alert>
+              </CardContent>
+            )}
+          </>
+        )}
+      </Card>
       {isConfirming && (
         <ConfirmDialog
           title="タスクの削除"
