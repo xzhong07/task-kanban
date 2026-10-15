@@ -1,19 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { CircleAlert, Loader2, Pencil, Trash2 } from "lucide-react";
-import { Alert, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ActionResult, Task, TaskInput } from "@/lib/tasks/types";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { ErrorAlert } from "./ErrorAlert";
+import { TaskCardActions } from "./TaskCardActions";
 import { TaskForm } from "./TaskForm";
 
 type TaskCardProps = {
@@ -76,43 +68,15 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
                   {task.description}
                 </CardDescription>
               )}
-              <CardAction className="flex gap-0.5">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="編集"
-                  title="編集"
-                  onClick={() => setIsEditing(true)}
-                  disabled={isDeleting}
-                  className="text-muted-foreground"
-                >
-                  <Pencil aria-hidden="true" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={isDeleting ? "削除中…" : "削除"}
-                  title="削除"
-                  onClick={() => setIsConfirming(true)}
-                  disabled={isDeleting}
-                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                >
-                  {isDeleting ? (
-                    <Loader2 aria-hidden="true" className="animate-spin" />
-                  ) : (
-                    <Trash2 aria-hidden="true" />
-                  )}
-                </Button>
-              </CardAction>
+              <TaskCardActions
+                isDeleting={isDeleting}
+                onEdit={() => setIsEditing(true)}
+                onDelete={() => setIsConfirming(true)}
+              />
             </CardHeader>
             {deleteError && (
               <CardContent>
-                <Alert variant="destructive">
-                  <CircleAlert aria-hidden="true" />
-                  <AlertTitle>{deleteError}</AlertTitle>
-                </Alert>
+                <ErrorAlert message={deleteError} />
               </CardContent>
             )}
           </>

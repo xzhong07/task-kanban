@@ -76,7 +76,10 @@ npx tsc --noEmit                             # 型チェック
 - `src/lib/tasks/queries.ts`: `getTasks()`（サーバー専用）と、DB 行 → `Task` 変換の `toTask()`。
 - `src/app/actions.ts`（`"use server"`）: `createTask` / `updateTask` / `deleteTask`。Server Action は誰でも呼べる入口なので必ずサーバー側でも検証する。例外は投げずに `ActionResult` を返し、DB のエラー内容は画面に出さない。
 - `src/app/page.tsx`: 見出しは同期で描画し、`getTasks()` を呼ぶ async の `TaskBoardLoader` を `<Suspense>` 内に置く（`cacheComponents` の要件）。
-- `src/components/kanban/`: `KanbanBoard`（client。`initialTasks` を `useState` で持ち、Server Action の戻り値で state を更新して即時反映）→ `TaskCard`（表示・編集切り替え・削除）/ `TaskForm`（追加・編集共通）/ `ConfirmDialog`（`role="alertdialog"`、Esc でキャンセル）。
+- `src/components/kanban/`:
+  - `KanbanBoard`（client。レイアウトのみ）→ `NewTaskPanel`（追加フォームの枠）+ 状態ごとの `KanbanColumn`（列見出し・件数・空状態）→ `TaskCard`（表示・編集切り替え・削除フロー）→ `TaskCardActions`（編集・削除ボタン）。
+  - `useKanbanTasks`: `initialTasks` を `useState` で持ち、Server Action の戻り値で state を更新して即時反映するフック。`KanbanActions` 型もここで定義（`KanbanBoard` から re-export）。
+  - 共通部品: `TaskForm`（追加・編集共通）/ `ConfirmDialog`（`role="alertdialog"`、Esc でキャンセル）/ `ErrorAlert`（エラー表示。`page.tsx` も使用）。
 - **テスト方針**: Server Action は `KanbanBoard` に `actions` prop として渡しているので、UI テストでは `vi.fn()` を渡す（`src/__tests__/KanbanBoard.test.tsx`）。Server Action / `getTasks` のテストは `@/lib/supabase/server` のみを `vi.mock` し、クエリビルダーのフェイクで検証する（`src/__tests__/actions.test.ts`）。要素は role とアクセシブルネーム（列 = `region`、カード = `article`、フォーム = `form`）で取得する。
 - **現状の仕様・制約**:
   - 並び順は `created_at` の昇順のみ（並び替え用の `position` 列は無い）。新規タスクは列の末尾に追加される。

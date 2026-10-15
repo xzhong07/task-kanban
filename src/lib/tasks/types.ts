@@ -4,6 +4,8 @@ export const TASK_STATUSES = [
   { value: "done", label: "完了" },
 ] as const;
 
+export type TaskStatusOption = (typeof TASK_STATUSES)[number];
+
 export type TaskStatus = (typeof TASK_STATUSES)[number]["value"];
 
 export type Task = {
