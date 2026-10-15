@@ -3,20 +3,15 @@
 import { Inbox } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type {
-  ActionResult,
-  Task,
-  TASK_STATUSES,
-  TaskInput,
-  TaskStatus,
-} from "@/lib/tasks/types";
+import type { Task, TaskStatus, TaskStatusOption } from "@/lib/tasks/types";
 import { TaskCard } from "./TaskCard";
+import type { KanbanActions } from "./useKanbanTasks";
 
 type KanbanColumnProps = {
-  status: (typeof TASK_STATUSES)[number];
+  status: TaskStatusOption;
   tasks: Task[];
-  onUpdate: (id: string, input: TaskInput) => Promise<ActionResult<Task>>;
-  onDelete: (id: string) => Promise<ActionResult<{ id: string }>>;
+  onUpdate: KanbanActions["updateTask"];
+  onDelete: KanbanActions["deleteTask"];
 };
 
 const statusDotClassName: Record<TaskStatus, string> = {

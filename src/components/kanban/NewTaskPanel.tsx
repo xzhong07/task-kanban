@@ -2,11 +2,12 @@
 
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { ActionResult, TaskInput } from "@/lib/tasks/types";
+import type { TaskInput } from "@/lib/tasks/types";
 import { TaskForm } from "./TaskForm";
+import type { KanbanActions } from "./useKanbanTasks";
 
 type NewTaskPanelProps = {
-  onCreate: (input: TaskInput) => Promise<ActionResult<unknown>>;
+  onCreate: KanbanActions["createTask"];
 };
 
 const emptyInput: TaskInput = { title: "", description: "", status: "todo" };
