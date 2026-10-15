@@ -25,9 +25,18 @@ npx tsc --noEmit                             # 型チェック
 
 - **App Router のみ**。ソースは `src/` 配下（`src/app/`）、パスエイリアスは `@/*` → `./src/*`。
 - **`next.config.ts` の実験的設定**: `cacheComponents: true` と `partialPrefetching: true` が有効。データ取得・キャッシュ・動的レンダリングを実装する際はこれらの挙動を前提にし、docs で確認すること。
-- **Tailwind CSS v4 は PostCSS ではなく Turbopack ローダー経由**（`next.config.ts` の `turbopack.rules` で `*.css` に `@tailwindcss/turbopack` を適用）。`postcss.config` や `tailwind.config` は存在しない。テーマ変数は `src/app/globals.css` の `@theme inline` で定義（ダークモードは `prefers-color-scheme`）。
+- **Tailwind CSS v4 は PostCSS ではなく Turbopack ローダー経由**（`next.config.ts` の `turbopack.rules` で `*.css` に `@tailwindcss/turbopack` を適用）。`postcss.config` や `tailwind.config` は存在しない。テーマ変数は `src/app/globals.css` の `:root` で値を定義し、`@theme inline` で Tailwind のユーティリティ（`bg-primary` など）に割り当てている（下記 shadcn/ui 参照）。
 - **`LayoutProps<"/">` / `PageProps` などのルート型はグローバル型**（Next.js が `.next/types` に生成）で import 不要。
 - フォントは `next/font/google` の Geist / Geist Mono を `src/app/layout.tsx` で CSS 変数として読み込んでいる。
+
+## shadcn/ui
+
+- 設定は `components.json`（スタイル `base-nova`、プリミティブは **Radix ではなく Base UI**（`@base-ui/react`）、アイコンは `lucide-react`、ベースカラー `neutral`）。Base UI と Radix は API が異なるので、ドキュメントや例を参照するときは Base UI 版を見ること。
+- コンポーネントの追加は `npx shadcn@latest add <name>`。`src/components/ui/` に生成され、生成物はプロジェクトのコードとして直接編集してよい。アプリ固有のコンポーネント（`src/components/kanban/` など）は `ui/` に置かない。
+- クラス名の結合は `@/lib/utils` の `cn()`（中身は shadcn 公式の `cn` パッケージ。clsx + tailwind-merge の代替）。
+- 色は `bg-background` / `text-foreground` / `bg-primary` / `text-muted-foreground` / `border-border` / `text-destructive` などのテーマトークンを使い、固定の色（`bg-gray-100` など）を新たに書かない。トークンの値を変えるときは `globals.css` の `:root` とダーク用の値の両方を揃える。
+- **ダークモードは `prefers-color-scheme`**。shadcn の既定（`.dark` クラス方式）から変更しており、`globals.css` の `@custom-variant dark` はメディアクエリ、ダーク用の値は `@media (prefers-color-scheme: dark) { :root { ... } }` にある。`shadcn init` や `--force` 付きの再実行、テーマ変更で `globals.css` が書き換わると `.dark` 方式と `--font-sans: var(--font-sans)`（自己参照で無効）に戻るので、実行後は差分を確認して直すこと。
+- 既存のカンバン UI（`TaskCard` / `TaskForm` / `ConfirmDialog`）はまだ shadcn のコンポーネントに置き換えていない。置き換える際は、テストが使う role とアクセシブルネーム（列 = `region`、カード = `article`、フォーム = `form`、`ConfirmDialog` = `alertdialog`）が変わらないことを既存テストで確認し、1 コンポーネントずつ行う。
 
 ## Supabase
 
