@@ -54,17 +54,37 @@ npx tsc --noEmit                             # 型チェック
 - `src/app/page.tsx`: 見出しは同期で描画し、`getTasks()` を呼ぶ async の `TaskBoardLoader` を `<Suspense>` 内に置く（`cacheComponents` の要件）。
 - `src/components/kanban/`: `KanbanBoard`（client。`initialTasks` を `useState` で持ち、Server Action の戻り値で state を更新して即時反映）→ `TaskCard`（表示・編集切り替え・削除）/ `TaskForm`（追加・編集共通）/ `ConfirmDialog`（`role="alertdialog"`、Esc でキャンセル）。
 - **テスト方針**: Server Action は `KanbanBoard` に `actions` prop として渡しているので、UI テストでは `vi.fn()` を渡す（`src/__tests__/KanbanBoard.test.tsx`）。Server Action / `getTasks` のテストは `@/lib/supabase/server` のみを `vi.mock` し、クエリビルダーのフェイクで検証する（`src/__tests__/actions.test.ts`）。要素は role とアクセシブルネーム（列 = `region`、カード = `article`、フォーム = `form`）で取得する。
+- **現状の仕様・制約**:
+  - 並び順は `created_at` の昇順のみ（並び替え用の `position` 列は無い）。新規タスクは列の末尾に追加される。
+  - `KanbanBoard` の state は初回の `initialTasks` から作るだけなので、別タブ・別ユーザーの変更はリロードするまで反映されない（`refresh()` / Realtime は未使用）。
+  - ステータスの変更は編集フォームのセレクトボックスで行う（ドラッグ&ドロップは未実装）。
+
+### よくある変更の手順
+
+- **ステータス（列）を追加・変更する**: DB の `status` の CHECK 制約（`apply_migration`）と `TASK_STATUSES` を両方変える。`status` は `text` 型なので型の再生成は不要。
+- **入力の制約（文字数など）を変える**: DB の CHECK 制約と `validation.ts` の `TITLE_MAX_LENGTH` / `DESCRIPTION_MAX_LENGTH` を揃える。
+- **列やテーブルを追加する**: `apply_migration` → `get_advisors` → `generate_typescript_types` で `database.types.ts` を更新 → `queries.ts` の `TASK_COLUMNS` / `toTask()` と `Task` 型を更新 → 検証・アクション・UI の順に、それぞれテストを先に書いてから実装する。
 
 ## テスト
 
-- Vitest 5 + React Testing Library + jsdom。設定は `vitest.config.mts`（パスエイリアスは Vite 標準の `resolve.tsconfigPaths: true` で解決しており、`vite-tsconfig-paths` プラグインは使わない）。
+- Vitest 5 + React Testing Library + `@testing-library/user-event` + jsdom。設定は `vitest.config.mts`（パスエイリアスは Vite 標準の `resolve.tsconfigPaths: true` で解決しており、`vite-tsconfig-paths` プラグインは使わない）。
 - テストは `src/__tests__/` に配置（コロケーションも可）。
-- Vitest は `async` Server Components に非対応。それらは単体テストではなく E2E でテストする。
+- **`globals: true` ではないため RTL の自動 cleanup が効かない**。複数のテストで `render` するファイルでは `afterEach(() => cleanup())` を必ず書く（書かないと前のテストの DOM が残る）。
+- 操作は `fireEvent` ではなく `const user = userEvent.setup()` を使う。
+- Server Action やサーバー専用コードのテストはファイル先頭に `// @vitest-environment node` を書く。
+- Vitest は `async` Server Components に非対応。`page.tsx` のように async の子を `<Suspense>` 内に置いているページは、`@/lib/supabase/server` を応答しない Promise でモックし、同期的に描画される部分（見出し・fallback）だけを検証する（`src/__tests__/page.test.tsx`）。async 部分は E2E でテストする。
+
+## 動作確認
+
+- 開発サーバーがすでに起動していることがある（`Another next dev server is already running` と出る）。その場合は既存のサーバー（http://localhost:3000）で確認し、ログは `.next/dev/logs/next-development.log` を見る。`instrumentation.ts` の変更は再起動するまで反映されない。
+- 実際の DB に対する確認は、publishable key（anon ロール）を使うスクリプトを `npx tsx --env-file=.env.local <script>` で実行すると、RLS ポリシーも含めて確かめられる。確認で作ったデータは必ず削除し、Supabase MCP の `execute_sql` で件数を確認する。`.env.local` の中身は読まない・表示しない。
 
 ## コーディングルール
 - 変更後は必ず`npm test`でテストが通ることを確認してください
 - 変更は1つの関心事に絞り、小さい単位で行ってください
 - 指示された範囲以外のコードを変更しないでください
+- 機能追加はテストを先に書き、失敗を確認してから実装してください（テスト → 実装の単位でコミット）
+- ブランチは `feat/...` / `chore/...` のように目的別に切ってください
 
 ## コーディング規約
 - コンポーネントは関数コンポーネントで記述してください
