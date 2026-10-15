@@ -36,7 +36,22 @@ npx tsc --noEmit                             # 型チェック
 - クラス名の結合は `@/lib/utils` の `cn()`（中身は shadcn 公式の `cn` パッケージ。clsx + tailwind-merge の代替）。
 - 色は `bg-background` / `text-foreground` / `bg-primary` / `text-muted-foreground` / `border-border` / `text-destructive` などのテーマトークンを使い、固定の色（`bg-gray-100` など）を新たに書かない。トークンの値を変えるときは `globals.css` の `:root` とダーク用の値の両方を揃える。
 - **ダークモードは `prefers-color-scheme`**。shadcn の既定（`.dark` クラス方式）から変更しており、`globals.css` の `@custom-variant dark` はメディアクエリ、ダーク用の値は `@media (prefers-color-scheme: dark) { :root { ... } }` にある。`shadcn init` や `--force` 付きの再実行、テーマ変更で `globals.css` が書き換わると `.dark` 方式と `--font-sans: var(--font-sans)`（自己参照で無効）に戻るので、実行後は差分を確認して直すこと。
-- 既存のカンバン UI（`TaskCard` / `TaskForm` / `ConfirmDialog`）はまだ shadcn のコンポーネントに置き換えていない。置き換える際は、テストが使う role とアクセシブルネーム（列 = `region`、カード = `article`、フォーム = `form`、`ConfirmDialog` = `alertdialog`）が変わらないことを既存テストで確認し、1 コンポーネントずつ行う。
+- カンバン UI（`KanbanBoard` / `TaskCard` / `TaskForm` / `ConfirmDialog` / `page.tsx`）は shadcn のコンポーネントで組み換え済み。見た目を変えるときも、テストが使う role とアクセシブルネーム（列 = `region`、カード = `article`、フォーム = `form`、`ConfirmDialog` = `alertdialog`、ボタン名「追加」「編集」「削除」など）が変わらないことを既存テストで確認し、1 コンポーネントずつ行う。
+
+### デザインルール
+
+- **配色**: neutral 基調のモノトーン。アクセント色は足さず、強弱はトークンの濃淡で付ける（例: 列の状態ドットは `bg-muted-foreground/40`（未着手）→ `bg-chart-2`（進行中）→ `bg-primary`（完了））。新しい色が必要なら `globals.css` にトークンを追加し、ライト・ダーク両方の値を定義してから使う。
+- **レイアウト**: `main` は `max-w-7xl px-4 sm:px-6 py-10`。`lg` 以上は `grid-cols-[18rem_1fr]` で左に追加フォーム（`lg:sticky lg:top-6`）、列は `md` 以上で 3 列、それ未満は縦積み。幅 390px で横スクロールが出ないこと。
+- **面と枠線**: 面は `Card`（`rounded-xl` + `ring-1 ring-foreground/10`）。枠線は `border` より `ring` を使う（base-nova の流儀）。列は `rounded-xl bg-muted/50 p-3 ring-1 ring-foreground/5`、タスクカードは `Card size="sm"` + `shadow-xs transition-shadow hover:shadow-md`。
+- **部品の使い分け**:
+  - ボタンは `Button`。主操作 = `default`、副操作（キャンセル）= `outline`、カード内の操作 = `ghost` + `size="icon-sm"`、破壊的操作 = `destructive`。
+  - 入力は `Label` + `Input` / `Textarea` / `NativeSelect`（`className="w-full"`）。セレクトは Base UI の `Select` ではなく `NativeSelect` を使う（テストの `user.selectOptions` / `getByLabelText` が `<select>` 前提のため）。
+  - エラーは `Alert variant="destructive"` + `CircleAlert` アイコン + `AlertTitle`。`Alert` が `role="alert"` を持つので自前で付けない。テストは `textContent` を完全一致で見るので、メッセージ以外のテキストを中に入れない。
+  - 件数は `Badge variant="secondary"`（`tabular-nums`）。確認ダイアログは `ConfirmDialog`（`AlertDialog` を `open` 固定で条件付きレンダーし、閉じる操作は `onOpenChange(false)` → `onCancel`）。
+- **アイコン**: `lucide-react`。装飾用は `aria-hidden="true"`。アイコンだけのボタンは `aria-label` と `title` を付ける（例: 編集 = `Pencil`、削除 = `Trash2`）。`Button` 内のアイコンはサイズ指定不要（自動で `size-4`）。
+- **状態表示**: 処理中は `Loader2 className="animate-spin"` + 文言（「追加中…」などの文言はテストで使うので変えない）。空状態は `border border-dashed` の枠 + アイコン（`Inbox`）+ 文言。
+- **文字**: ページ見出しは `font-heading text-2xl font-semibold tracking-tight`、列見出しは `text-sm font-semibold`、補足は `text-sm text-muted-foreground`。ユーザー入力の表示には `break-words`、説明文は `whitespace-pre-wrap` も付ける。
+- **見た目の確認**: Playwright MCP でライト・ダーク（`browser_emulate_media`）と幅 1280px / 390px のスクリーンショットを撮る。`Button` などは `transition-all` のため、切り替え直後のスクリーンショットは途中の色になることがあるので少し待ってから撮る。スクリーンショットは `.playwright-mcp/` に保存される（コミットしない）。
 
 ## Supabase
 
